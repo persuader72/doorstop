@@ -21,6 +21,7 @@ from doorstop.core.base import (
     delete_document,
     edit_document,
 )
+
 from doorstop.core.item import Item
 from doorstop.core.types import UID, Level, Prefix
 from doorstop.core.validators.item_validator import ItemValidator
@@ -39,6 +40,10 @@ class Document(BaseValidatable, BaseFileObject):  # pylint: disable=R0902
     DEFAULT_PREFIX = Prefix('REQ')
     DEFAULT_SEP = ''
     DEFAULT_DIGITS = 3
+
+    @staticmethod
+    def factory(path, root=os.getcwd(), **kwargs):
+        return DOCUMENT_CLASS(path, root, **kwargs)
 
     def __init__(self, path, root=os.getcwd(), **kwargs):
         """Initialize a document from an exiting directory.
@@ -60,6 +65,7 @@ class Document(BaseValidatable, BaseFileObject):  # pylint: disable=R0902
         self.auto = kwargs.get('auto', Document.auto)
         # Set default values
         self._attribute_defaults = None
+        self._foreign_fields = None
         self._data['prefix'] = Document.DEFAULT_PREFIX
         self._data['sep'] = Document.DEFAULT_SEP
         self._data['digits'] = Document.DEFAULT_DIGITS
@@ -126,7 +132,8 @@ class Document(BaseValidatable, BaseFileObject):  # pylint: disable=R0902
         Document._create(config, name='document')
 
         # Initialize the document
-        document = Document(path, root=root, tree=tree, auto=False)
+        # document = Document(path, root=root, tree=tree, auto=False)
+        document = Document.factory(path, root=root, tree=tree, auto=False)
         document.prefix = (  # type: ignore
             prefix if prefix is not None else document.prefix
         )
@@ -200,6 +207,12 @@ class Document(BaseValidatable, BaseFileObject):  # pylint: disable=R0902
                 self._attribute_defaults = value
             elif key == 'reviewed':
                 self._extended_reviewed = sorted(set(v for v in value))
+            elif key == 'forgein-fields' or key == 'foreign-fields':
+                self._foreign_fields = value
+            elif key == 'item-template':
+                self._item_template = value
+            elif key == 'customs':
+                self._item_template = value
             else:
                 msg = "unexpected attributes configuration '{}' in: {}".format(
                     key, self.config
@@ -264,7 +277,7 @@ class Document(BaseValidatable, BaseFileObject):  # pylint: disable=R0902
             for filename in filenames:
                 path = os.path.join(dirpath, filename)
                 try:
-                    item = Item(self, path, root=self.root, tree=self.tree)
+                    item = Item.factory(self, path, root=self.root, tree=self.tree)
                 except DoorstopError:
                     pass  # skip non-item files
                 else:
@@ -423,6 +436,13 @@ class Document(BaseValidatable, BaseFileObject):  # pylint: disable=R0902
         log.info("deleting {} index...".format(self))
         common.delete(self.index)
 
+    @property
+    def foreign_fields(self):
+        return self._foreign_fields
+
+    @property
+    def forgein_fields(self):
+        return self._foreign_fields
     # actions ################################################################
 
     # decorators are applied to methods in the associated classes
@@ -836,3 +856,6 @@ class Document(BaseValidatable, BaseFileObject):  # pylint: disable=R0902
         for item in self:
             item.delete()
         # the document is deleted in the decorated method
+
+
+DOCUMENT_CLASS = Document

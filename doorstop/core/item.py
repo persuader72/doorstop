@@ -105,6 +105,10 @@ class Item(BaseFileObject):  # pylint: disable=R0902
     DEFAULT_REF = ""
     DEFAULT_HEADER = Text()
 
+    @staticmethod
+    def factory(document, path, root=os.getcwd(), **kwargs):
+        return ITEM_CLASS(document, path, root, **kwargs)
+
     def __init__(self, document, path, root=os.getcwd(), **kwargs):
         """Initialize an item from an existing file.
 
@@ -194,7 +198,7 @@ class Item(BaseFileObject):  # pylint: disable=R0902
         log.debug("creating item file at {}...".format(path2))
         Item._create(path2, name='item')
         # Initialize the item
-        item = Item(document, path2, root=root, tree=tree, auto=False)
+        item = Item.factory(document, path2, root=root, tree=tree, auto=False)
         item.level = level if level is not None else item.level  # type: ignore
         if auto or (auto is None and Item.auto):
             item.save()
@@ -664,7 +668,7 @@ class Item(BaseFileObject):  # pylint: disable=R0902
             keyword = ref_item["keyword"] if "keyword" in ref_item else None
 
             reference = self.reference_finder.find_file_reference(
-                path, self.root, self.tree, self.path, keyword
+                path, self.root, self.tree, path, keyword
             )
             references.append(reference)
         return references
@@ -726,7 +730,7 @@ class Item(BaseFileObject):  # pylint: disable=R0902
         # Find child objects
         log.debug("finding item {}'s child objects...".format(self))
         for document2 in tree:
-            if document2.parent == document.prefix:
+            if document2.parent == document.prefix or document2.prefix == document.prefix:
                 child_documents.append(document2)
                 # Search for child items unless we only need to find one
                 if not child_items or find_all:
@@ -824,3 +828,6 @@ class UnknownItem:
     def stamp(self):  # pylint: disable=R0201
         """Return an empty stamp."""
         return Stamp(None)
+
+
+ITEM_CLASS = Item

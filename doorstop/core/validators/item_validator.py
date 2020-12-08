@@ -204,7 +204,7 @@ class ItemValidator:
 
             if not items:
                 for child_document in documents:
-                    if document.prefix in skip:
+                    if document.prefix in skip or child_document.prefix == document.prefix:
                         msg = "skipping issues against document %s..."
                         log.debug(msg, child_document)
                         continue
