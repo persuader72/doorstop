@@ -24,20 +24,22 @@ class BaseWorkingCopy(metaclass=ABCMeta):
         self._ignores_cache: Optional[List[str]] = None
         self._path_cache: Optional[List[Tuple[str, str, str]]] = None
 
-    @staticmethod
-    def relpath(path):
+    def relpath(self, path):
         """Get a relative path to the working copy root for commands."""
-        return os.path.relpath(path).replace('\\', '/')
+        return os.path.relpath(path, self.path).replace('\\', '/')
 
-    @staticmethod
-    def call(*args, return_stdout=False):  # pragma: no cover (abstract method)
+    def call(self, *args, return_stdout=False):  # pragma: no cover (abstract method)
         """Call a command with string arguments."""
         log.debug("$ %s", ' '.join(args))
         try:
             if return_stdout:
                 return subprocess.check_output(args).decode('utf-8')
             else:
-                return subprocess.call(args)
+                cwd = os.getcwd()
+                os.chdir(self.path)
+                res = subprocess.call(args)
+                os.chdir(cwd)
+                return res
         except FileNotFoundError:
             raise common.DoorstopError("Command not found: {}".format(args[0]))
 
