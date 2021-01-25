@@ -76,7 +76,7 @@ def _document_from_path(path, root, documents):
 
     """
     try:
-        document = Document(path, root, tree=None)  # tree attached later
+        document = Document.factory(path, root, tree=None)  # tree attached later
     except DoorstopError:
         pass  # no document in directory
     else:
